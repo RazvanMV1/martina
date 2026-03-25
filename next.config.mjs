@@ -23,7 +23,7 @@ const nextConfig = {
     // Forțăm formatul AVIF + WebP pentru compresie maximă.
     // Next.js le servește automat browserelor compatibile.
     formats: ['image/avif', 'image/webp'],
-    qualities: [75, 85],
+    qualities: [75, 80, 85],
   },
 
   // Headers de securitate la nivel de framework (completate ulterior la nivel de reverse proxy).
