@@ -53,20 +53,38 @@ export default function SubscribeForm() {
   if (submitted) {
     return (
       <div className="flex flex-col items-start gap-3" role="status" aria-live="polite">
-        <div className="w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth={2.5} className="w-6 h-6 text-emerald-400" aria-hidden="true">
+
+        {/* Icon */}
+        <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            className="w-6 h-6 text-emerald-400"
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <p className="text-white font-semibold text-base">You&apos;re in. Check your inbox.</p>
-        <p className="text-gray-500 text-sm">
-          Meanwhile,{' '}
-          <a href="https://t.me/themartinavalenti" target="_blank" rel="noopener noreferrer"
-            className="text-rose-400 underline underline-offset-2 hover:text-rose-300 transition-colors">
-            join Telegram now →
-          </a>
+
+        {/* Mesaj principal */}
+        <p className="text-white font-semibold text-base">
+          Access granted. Check your inbox.
         </p>
+
+        {/* Instrucțiuni — fără link Telegram */}
+        <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+          We sent you a confirmation email.
+          Click the link inside to unlock access to the private circle.
+        </p>
+
+        {/* Hint discret */}
+        <p className="text-gray-700 text-xs">
+          Don&apos;t see it? Check your spam folder.
+        </p>
+
       </div>
     );
   }
@@ -119,7 +137,7 @@ export default function SubscribeForm() {
             focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-400
           "
         >
-          {isLoading ? <Spinner /> : 'Unlock the Secrets'}
+          {isLoading ? <Spinner /> : 'Request Access'}
         </button>
       </form>
 
@@ -130,8 +148,8 @@ export default function SubscribeForm() {
       )}
 
       <p className="mt-3 text-xs text-gray-600 tracking-wide">
-        🔒 Spam-free.{' '}
-        <span className="text-gray-500">100% discreet.</span>{' '}
+        🔒 Discreet.{' '}
+        <span className="text-gray-500">Select members only.</span>{' '}
         Free to join.
       </p>
     </>
@@ -141,11 +159,24 @@ export default function SubscribeForm() {
 function Spinner() {
   return (
     <span className="flex items-center gap-2" aria-label="Loading">
-      <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg"
-        fill="none" viewBox="0 0 24 24" aria-hidden="true">
-        <circle className="opacity-25" cx="12" cy="12" r="10"
-          stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+      <svg
+        className="animate-spin w-4 h-4"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <circle
+          className="opacity-25"
+          cx="12" cy="12" r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v8H4z"
+        />
       </svg>
       Sending...
     </span>

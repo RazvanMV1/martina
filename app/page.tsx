@@ -8,7 +8,6 @@ export default function HomePage() {
 
       {/* ── BACKGROUND ── */}
       <div className="absolute inset-0 z-0" aria-hidden="true">
-        {/* Gradient atmosferă */}
         <div
           className="absolute inset-0"
           style={{
@@ -20,7 +19,6 @@ export default function HomePage() {
             `,
           }}
         />
-        {/* Noise texture — grain cinematic */}
         <div
           className="absolute inset-0 opacity-[0.035]"
           style={{
@@ -29,7 +27,6 @@ export default function HomePage() {
             backgroundSize: '200px 200px',
           }}
         />
-        {/* Linie separator verticală — doar desktop */}
         <div
           className="absolute inset-y-0 hidden md:block"
           style={{
@@ -38,7 +35,6 @@ export default function HomePage() {
             background: 'linear-gradient(to bottom, transparent 0%, rgba(244,63,94,0.08) 30%, rgba(244,63,94,0.12) 50%, rgba(244,63,94,0.08) 70%, transparent 100%)',
           }}
         />
-        {/* Vignette margini */}
         <div
           className="absolute inset-0"
           style={{
@@ -57,48 +53,35 @@ export default function HomePage() {
 
           {/* Eyebrow */}
           <p className="text-[0.6rem] font-semibold tracking-[0.3em] uppercase text-rose-300/60 mb-3">
-            Private Access · Members Only
+            Exclusive Circle · By Invitation Only
           </p>
 
           {/* Headline */}
           <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-white leading-tight mb-4">
-            You thought you knew me?{' '}
+            Not everyone gets in.{' '}
             <span
               className="italic font-normal text-rose-300 block"
               style={{ fontFamily: 'var(--font-playfair)' }}
             >
-              Discover my uncensored side.
+              You might be the exception.
             </span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-sm lg:text-base text-gray-400 font-light leading-relaxed mb-7 max-w-sm">
-            Exclusive access to my private world.{' '}
-            <strong className="text-white font-medium">100% free</strong>, only on Telegram.
+            A private circle. No filters. No performance.{' '}
+            <strong className="text-white font-medium">Just the real me.</strong>
           </p>
 
           {/* Form */}
           <SubscribeForm />
 
-          {/* Social proof */}
-          <div className="mt-7 flex items-center gap-2.5 opacity-50">
-            <div className="flex -space-x-2" aria-hidden="true">
-              {['bg-rose-400/50', 'bg-purple-400/50', 'bg-pink-400/50', 'bg-indigo-400/50'].map((color, i) => (
-                <div key={i} className={`w-6 h-6 rounded-full ${color} ring-2 ring-black`} />
-              ))}
-            </div>
-            <p className="text-xs text-gray-500">
-              <span className="text-white font-semibold">2,400+</span> members already inside
-            </p>
-          </div>
         </div>
 
         {/* DREAPTA — avatar mare Martina */}
         <div className="flex flex-col items-center justify-center gap-4 w-[42%] h-full">
 
-          {/* Avatar cerc */}
           <div className="relative w-72 h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96">
-            {/* Glow în spate */}
             <div
               className="absolute inset-0 rounded-full"
               style={{
@@ -108,7 +91,6 @@ export default function HomePage() {
               }}
               aria-hidden="true"
             />
-            {/* Imaginea */}
             <div className="relative w-full h-full rounded-full ring-1 ring-rose-500/20 overflow-hidden shadow-2xl">
               <Image
                 src="/avatar.webp"
@@ -116,10 +98,9 @@ export default function HomePage() {
                 fill
                 priority
                 quality={85}
-                className="object-cover object-center"
+                className="object-cover object-top"
                 sizes="(min-width: 1280px) 384px, (min-width: 1024px) 320px, 288px"
               />
-              {/* Fade jos */}
               <div
                 className="absolute inset-x-0 bottom-0 h-1/3"
                 style={{ background: 'linear-gradient(to top, #000000 0%, transparent 100%)' }}
@@ -128,7 +109,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Online indicator — sub avatar, în afara overflow-hidden */}
           <div className="flex items-center gap-2">
             <span
               className="w-2 h-2 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/60"
@@ -158,10 +138,9 @@ export default function HomePage() {
               height={144}
               priority
               quality={85}
-              className="object-cover object-center w-full h-full"
+              className="object-cover object-top w-full h-full"
             />
           </div>
-          {/* Glow sub avatar */}
           <div
             className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-8"
             style={{
@@ -170,7 +149,6 @@ export default function HomePage() {
             }}
             aria-hidden="true"
           />
-          {/* Online dot */}
           <span
             className="absolute bottom-1 right-1/2 translate-x-14 w-3.5 h-3.5 rounded-full bg-emerald-400 ring-2 ring-black shadow-lg shadow-emerald-400/60"
             role="img"
@@ -187,24 +165,24 @@ export default function HomePage() {
 
         {/* Eyebrow */}
         <p className="text-[0.6rem] font-semibold tracking-[0.3em] uppercase text-rose-300/60 mb-2">
-          Private Access · Members Only
+          Exclusive Circle · By Invitation Only
         </p>
 
         {/* Headline */}
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight mb-3">
-          You thought you knew me?{' '}
+          Not everyone gets in.{' '}
           <span
             className="italic font-normal text-rose-300 block"
             style={{ fontFamily: 'var(--font-playfair)' }}
           >
-            Discover my uncensored side.
+            You might be the exception.
           </span>
         </h1>
 
         {/* Subheadline */}
         <p className="text-sm text-gray-400 font-light leading-relaxed mb-5 max-w-xs">
-          Exclusive access to my private world.{' '}
-          <strong className="text-white font-medium">100% free</strong>, only on Telegram.
+          A private circle. No filters. No performance.{' '}
+          <strong className="text-white font-medium">Just the real me.</strong>
         </p>
 
         {/* Form */}
