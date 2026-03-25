@@ -190,18 +190,6 @@ export default function HomePage() {
           <SubscribeForm />
         </div>
 
-        {/* Social proof */}
-        <div className="mt-5 flex items-center justify-center gap-2.5 opacity-50">
-          <div className="flex -space-x-2" aria-hidden="true">
-            {['bg-rose-400/50', 'bg-purple-400/50', 'bg-pink-400/50', 'bg-indigo-400/50'].map((color, i) => (
-              <div key={i} className={`w-6 h-6 rounded-full ${color} ring-2 ring-black`} />
-            ))}
-          </div>
-          <p className="text-xs text-gray-500">
-            <span className="text-white font-semibold">2,400+</span> members already inside
-          </p>
-        </div>
-
       </div>
 
     </main>
