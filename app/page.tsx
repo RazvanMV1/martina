@@ -4,10 +4,11 @@ import SubscribeForm from '@/components/SubscribeForm';
 
 export default function HomePage() {
   return (
-    <main className="relative h-screen w-full flex items-center overflow-hidden bg-black">
+    <main className="relative h-screen w-full overflow-hidden bg-black flex items-center">
 
       {/* ── BACKGROUND ── */}
       <div className="absolute inset-0 z-0" aria-hidden="true">
+        {/* Gradient atmosferă */}
         <div
           className="absolute inset-0"
           style={{
@@ -19,6 +20,7 @@ export default function HomePage() {
             `,
           }}
         />
+        {/* Noise texture — grain cinematic */}
         <div
           className="absolute inset-0 opacity-[0.035]"
           style={{
@@ -27,72 +29,191 @@ export default function HomePage() {
             backgroundSize: '200px 200px',
           }}
         />
+        {/* Linie separator verticală — doar desktop */}
         <div
           className="absolute inset-y-0 hidden md:block"
           style={{
-            right: '38%',
+            right: '42%',
             width: '1px',
             background: 'linear-gradient(to bottom, transparent 0%, rgba(244,63,94,0.08) 30%, rgba(244,63,94,0.12) 50%, rgba(244,63,94,0.08) 70%, transparent 100%)',
           }}
         />
+        {/* Vignette margini */}
         <div
           className="absolute inset-0"
           style={{
-            background: 'radial-gradient(ellipse 100% 100% at 50% 50%, transparent 50%, rgba(0,0,0,0.6) 100%)',
+            background: 'radial-gradient(ellipse 100% 100% at 50% 50%, transparent 50%, rgba(0,0,0,0.65) 100%)',
           }}
         />
       </div>
 
-      {/* ── CONTENT ── */}
-      <div className="relative z-20 flex flex-col justify-center
-        items-center text-center md:items-start md:text-left
-        px-6 md:px-16 lg:px-24
-        w-full max-w-lg mx-auto md:mx-0">
+      {/* ════════════════════════════════════════
+          DESKTOP — stânga content, dreapta avatar
+          ════════════════════════════════════════ */}
+      <div className="relative z-20 w-full h-full hidden md:flex items-center">
 
-        {/* AVATAR */}
-        <div className="mb-5 relative">
-          <div className="w-20 h-20 rounded-full ring-2 ring-rose-500/30 overflow-hidden shadow-2xl shadow-rose-900/20">
+        {/* STÂNGA — content */}
+        <div className="flex flex-col justify-center items-start text-left px-16 lg:px-24 w-[58%]">
+
+          {/* Eyebrow */}
+          <p className="text-[0.6rem] font-semibold tracking-[0.3em] uppercase text-rose-300/60 mb-3">
+            Private Access · Members Only
+          </p>
+
+          {/* Headline */}
+          <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-white leading-tight mb-4">
+            You thought you knew me?{' '}
+            <span
+              className="italic font-normal text-rose-300 block"
+              style={{ fontFamily: 'var(--font-playfair)' }}
+            >
+              Discover my uncensored side.
+            </span>
+          </h1>
+
+          {/* Subheadline */}
+          <p className="text-sm lg:text-base text-gray-400 font-light leading-relaxed mb-7 max-w-sm">
+            Exclusive access to my private world.{' '}
+            <strong className="text-white font-medium">100% free</strong>, only on Telegram.
+          </p>
+
+          {/* Form */}
+          <SubscribeForm />
+
+          {/* Social proof */}
+          <div className="mt-7 flex items-center gap-2.5 opacity-50">
+            <div className="flex -space-x-2" aria-hidden="true">
+              {['bg-rose-400/50', 'bg-purple-400/50', 'bg-pink-400/50', 'bg-indigo-400/50'].map((color, i) => (
+                <div key={i} className={`w-6 h-6 rounded-full ${color} ring-2 ring-black`} />
+              ))}
+            </div>
+            <p className="text-xs text-gray-500">
+              <span className="text-white font-semibold">2,400+</span> members already inside
+            </p>
+          </div>
+        </div>
+
+        {/* DREAPTA — avatar mare Martina */}
+        <div className="flex flex-col items-center justify-center gap-4 w-[42%] h-full">
+
+          {/* Avatar cerc */}
+          <div className="relative w-72 h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96">
+            {/* Glow în spate */}
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(136,19,55,0.15) 0%, transparent 70%)',
+                filter: 'blur(40px)',
+                transform: 'scale(1.3)',
+              }}
+              aria-hidden="true"
+            />
+            {/* Imaginea */}
+            <div className="relative w-full h-full rounded-full ring-1 ring-rose-500/20 overflow-hidden shadow-2xl">
+              <Image
+                src="/avatar.webp"
+                alt="Martina Valenti"
+                fill
+                priority
+                quality={85}
+                className="object-cover object-center"
+                sizes="(min-width: 1280px) 384px, (min-width: 1024px) 320px, 288px"
+              />
+              {/* Fade jos */}
+              <div
+                className="absolute inset-x-0 bottom-0 h-1/3"
+                style={{ background: 'linear-gradient(to top, #000000 0%, transparent 100%)' }}
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+
+          {/* Online indicator — sub avatar, în afara overflow-hidden */}
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2 h-2 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/60"
+              role="img"
+              aria-label="Online"
+            />
+            <span className="text-xs text-gray-400 tracking-wide">
+              <strong className="text-white font-medium">Martina Valenti</strong> · Online now
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════
+          MOBILE — vertical, centrat
+          ════════════════════════════════════════ */}
+      <div className="relative z-20 w-full flex flex-col items-center justify-center text-center px-6 py-8 md:hidden">
+
+        {/* Avatar centrat sus */}
+        <div className="relative mb-3">
+          <div className="w-36 h-36 rounded-full ring-1 ring-rose-500/20 overflow-hidden shadow-2xl mx-auto">
             <Image
-              src="/avatar.jpg"
-              alt="Martina"
-              width={80}
-              height={80}
+              src="/avatar.webp"
+              alt="Martina Valenti"
+              width={144}
+              height={144}
               priority
               quality={85}
-              className="object-cover w-full h-full"
+              className="object-cover object-center w-full h-full"
             />
           </div>
+          {/* Glow sub avatar */}
+          <div
+            className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-8"
+            style={{
+              background: 'radial-gradient(ellipse, rgba(136,19,55,0.3) 0%, transparent 70%)',
+              filter: 'blur(8px)',
+            }}
+            aria-hidden="true"
+          />
+          {/* Online dot */}
           <span
-            className="absolute bottom-0.5 left-14 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-black shadow-lg shadow-emerald-400/60"
+            className="absolute bottom-1 right-1/2 translate-x-14 w-3.5 h-3.5 rounded-full bg-emerald-400 ring-2 ring-black shadow-lg shadow-emerald-400/60"
             role="img"
             aria-label="Online"
           />
         </div>
 
-        {/* EYEBROW */}
-        <p className="text-[0.6rem] font-semibold tracking-[0.3em] uppercase text-rose-300/60 mb-3">
+        {/* Online text */}
+        <div className="mb-3 flex items-center justify-center gap-2">
+          <span className="text-xs text-gray-400 tracking-wide">
+            <strong className="text-white font-medium">Martina Valenti</strong> · Online now
+          </span>
+        </div>
+
+        {/* Eyebrow */}
+        <p className="text-[0.6rem] font-semibold tracking-[0.3em] uppercase text-rose-300/60 mb-2">
           Private Access · Members Only
         </p>
 
-        {/* HEADLINE */}
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight mb-3">
+        {/* Headline */}
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight mb-3">
           You thought you knew me?{' '}
-          <span className="text-rose-300 italic font-light block">
+          <span
+            className="italic font-normal text-rose-300 block"
+            style={{ fontFamily: 'var(--font-playfair)' }}
+          >
             Discover my uncensored side.
           </span>
         </h1>
 
-        {/* SUBHEADLINE */}
-        <p className="text-sm sm:text-base text-gray-400 font-light leading-relaxed mb-6 max-w-sm">
+        {/* Subheadline */}
+        <p className="text-sm text-gray-400 font-light leading-relaxed mb-5 max-w-xs">
           Exclusive access to my private world.{' '}
           <strong className="text-white font-medium">100% free</strong>, only on Telegram.
         </p>
 
-        {/* FORM — client component */}
-        <SubscribeForm />
+        {/* Form */}
+        <div className="w-full max-w-sm">
+          <SubscribeForm />
+        </div>
 
-        {/* SOCIAL PROOF */}
-        <div className="mt-6 flex items-center gap-2.5 opacity-50">
+        {/* Social proof */}
+        <div className="mt-5 flex items-center justify-center gap-2.5 opacity-50">
           <div className="flex -space-x-2" aria-hidden="true">
             {['bg-rose-400/50', 'bg-purple-400/50', 'bg-pink-400/50', 'bg-indigo-400/50'].map((color, i) => (
               <div key={i} className={`w-6 h-6 rounded-full ${color} ring-2 ring-black`} />
@@ -103,20 +224,6 @@ export default function HomePage() {
           </p>
         </div>
 
-      </div>
-
-      {/* ── DECORATIVE dreapta desktop ── */}
-      <div
-        className="absolute right-0 top-0 bottom-0 hidden md:flex items-center justify-center w-[42%]"
-        aria-hidden="true"
-      >
-        <div
-          className="w-72 h-72 lg:w-96 lg:h-96 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(136,19,55,0.08) 0%, transparent 70%)',
-            boxShadow: '0 0 120px 40px rgba(136,19,55,0.06)',
-          }}
-        />
       </div>
 
     </main>
