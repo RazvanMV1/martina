@@ -1,54 +1,55 @@
 // app/page.tsx
 'use client';
 
-// Notă: 'use client' este necesar DOAR pentru interactivitate (useState pentru form).
-// Toate componentele statice rămân Server Components automat în Next.js App Router.
-
 import Image from 'next/image';
-import { useState, FormEvent } from 'react';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TIP: Plasează imaginea hero în /public/hero.jpg (sau .webp, .avif).
-// Next.js <Image> va genera automat srcset și va servi AVIF/WebP browserelor
-// compatibile. Dimensiunile de mai jos sunt orientative — ajustează conform
-// imaginii tale reale.
-// ─────────────────────────────────────────────────────────────────────────────
+import { useState, FormEvent, useEffect } from 'react';
 
 export default function HomePage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [utmParams, setUtmParams] = useState({
+    utm_source: 'direct',
+    utm_medium: 'none',
+    utm_campaign: 'none',
+  });
+
+  // Capturăm UTM parametrii din URL la încărcarea paginii
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setUtmParams({
+      utm_source: params.get('utm_source') || 'direct',
+      utm_medium: params.get('utm_medium') || 'none',
+      utm_campaign: params.get('utm_campaign') || 'none',
+    });
+  }, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-        const response = await fetch('/api/subscribe', {
+      const response = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-        });
+        body: JSON.stringify({ email, ...utmParams }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!response.ok) {
+      if (!response.ok) {
         throw new Error(data.error || 'Something went wrong.');
-        }
+      }
 
-        // Tracking event Plausible client-side
-        // window.plausible?.('EmailCapture', { props: { source: 'hero-form' } });
-
-        setSubmitted(true);
+      setSubmitted(true);
 
     } catch (error) {
-        console.error('Subscription error:', error);
-        alert(error instanceof Error ? error.message : 'Something went wrong.');
+      console.error('Subscription error:', error);
+      alert(error instanceof Error ? error.message : 'Something went wrong.');
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-    };
-
+  };
 
   return (
     <main
@@ -69,12 +70,6 @@ export default function HomePage() {
       />
 
       {/* ── HERO BACKGROUND IMAGE ────────────────────────────────────────── */}
-      {/* 
-        Imaginea este în background (z-index 0), conținutul este deasupra (z-index 10).
-        fill + object-cover = equivalent cu background-size: cover în CSS,
-        dar cu toate optimizările Next.js (lazy load dezactivat prin priority,
-        srcset automat, AVIF/WebP automat).
-      */}
       <Image
         src="/hero.jpg"
         alt="Martina Valenti"
@@ -96,7 +91,7 @@ export default function HomePage() {
           mx-auto
         "
       >
-        {/* ── AVATAR / PROFILE IMAGE (opțional, deasupra headline) ───────── */}
+        {/* ── AVATAR / PROFILE IMAGE ───────────────────────────────────── */}
         <div className="mb-8 relative">
           <div
             className="
@@ -116,7 +111,6 @@ export default function HomePage() {
               className="object-cover w-full h-full"
             />
           </div>
-          {/* Status indicator — evocă exclusivitate */}
           <span
             className="
               absolute bottom-0 right-1/2 translate-x-10
@@ -129,10 +123,7 @@ export default function HomePage() {
           />
         </div>
 
-        {/* ── EYEBROW TEXT ─────────────────────────────────────────────────
-         * Microcopy discret deasupra headline-ului.
-         * Rol psihologic: setează contextul de exclusivitate înainte de mesajul principal.
-         */}
+        {/* ── EYEBROW TEXT ─────────────────────────────────────────────── */}
         <p
           className="
             text-xs font-medium tracking-[0.25em] uppercase
@@ -143,10 +134,7 @@ export default function HomePage() {
           Private Access · Members Only
         </p>
 
-        {/* ── HEADLINE ─────────────────────────────────────────────────────
-         * H1 este vital pentru SEO și accesibilitate.
-         * Un singur H1 per pagină — regulă de bază.
-         */}
+        {/* ── HEADLINE ─────────────────────────────────────────────────── */}
         <h1
           className="
             text-3xl sm:text-4xl md:text-5xl
@@ -162,7 +150,7 @@ export default function HomePage() {
           </span>
         </h1>
 
-        {/* ── SUBHEADLINE ──────────────────────────────────────────────────  */}
+        {/* ── SUBHEADLINE ──────────────────────────────────────────────── */}
         <p
           className="
             text-base sm:text-lg
@@ -177,23 +165,14 @@ export default function HomePage() {
           <strong className="text-white font-medium">100% free</strong>, only on Telegram.
         </p>
 
-        {/* ── FORM ─────────────────────────────────────────────────────────
-         * Starea `submitted` înlocuiește formularul cu un mesaj de confirmare.
-         * Această abordare este superioară unui redirect deoarece:
-         * 1. Menține utilizatorul pe pagină (reduce bounce rate post-conversie).
-         * 2. Permite afișarea unui CTA secundar (ex: link Telegram direct).
-         */}
+        {/* ── FORM ─────────────────────────────────────────────────────── */}
         {submitted ? (
           <div
-            className="
-              flex flex-col items-center gap-4
-              animate-fade-in
-            "
+            className="flex flex-col items-center gap-4"
             role="status"
             aria-live="polite"
           >
             <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center">
-              {/* Checkmark SVG inline — zero dependențe externe */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -210,7 +189,7 @@ export default function HomePage() {
             <p className="text-gray-400 text-sm">
               Meanwhile,{' '}
               <a
-                href="https://t.me/your-channel"
+                href="https://t.me/themartinavalenti"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-rose-300 underline underline-offset-2 hover:text-rose-200 transition-colors"
@@ -270,7 +249,6 @@ export default function HomePage() {
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  {/* Spinner SVG inline */}
                   <svg
                     className="animate-spin w-4 h-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -298,7 +276,7 @@ export default function HomePage() {
           </form>
         )}
 
-        {/* ── MICROCOPY ────────────────────────────────────────────────────  */}
+        {/* ── MICROCOPY ────────────────────────────────────────────────── */}
         {!submitted && (
           <p className="mt-4 text-xs text-gray-500 tracking-wide">
             🔒 Spam-free.{' '}
@@ -307,10 +285,9 @@ export default function HomePage() {
           </p>
         )}
 
-        {/* ── SOCIAL PROOF (opțional) ───────────────────────────────────── */}
+        {/* ── SOCIAL PROOF ─────────────────────────────────────────────── */}
         <div className="mt-10 flex items-center gap-2 opacity-60">
           <div className="flex -space-x-2">
-            {/* Avatar stacks placeholder — înlocuiește cu imagini reale */}
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}

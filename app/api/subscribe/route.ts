@@ -5,6 +5,9 @@ import { createHash, randomBytes } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendConfirmationEmail } from '@/lib/email';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHEMA DE VALIDARE — include UTM params
+// ─────────────────────────────────────────────────────────────────────────────
 const subscribeSchema = z.object({
   email: z
     .string()
@@ -12,6 +15,9 @@ const subscribeSchema = z.object({
     .email('Invalid email format')
     .max(254, 'Email too long')
     .transform((val) => val.toLowerCase().trim()),
+  utm_source: z.string().max(100).optional().default('direct'),
+  utm_medium: z.string().max(100).optional().default('none'),
+  utm_campaign: z.string().max(100).optional().default('none'),
 });
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -37,7 +43,6 @@ function hashIP(ip: string): string {
     .substring(0, 16);
 }
 
-// Generăm un token unic pentru confirmare
 function generateToken(): string {
   return randomBytes(32).toString('hex');
 }
@@ -66,9 +71,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email } = validation.data;
+    const { email, utm_source, utm_medium, utm_campaign } = validation.data;
     const token = generateToken();
-    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 ore
+    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // Verificăm dacă emailul există deja
     const { data: existing } = await supabaseAdmin
@@ -79,23 +84,26 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       if (existing.status === 'confirmed') {
-        // Emailul deja confirmat — returnăm success fără să trimitem din nou
         return NextResponse.json(
           { success: true, message: 'Check your inbox!' },
           { status: 200 }
         );
       }
 
-      // Emailul există dar nu este confirmat — actualizăm tokenul și retrimitem
+      // Emailul există dar nu este confirmat — actualizăm tokenul și UTM-urile
       await supabaseAdmin
         .from('email_subscribers')
         .update({
           token,
           token_expires_at: tokenExpiresAt.toISOString(),
+          utm_source,
+          utm_medium,
+          utm_campaign,
         })
         .eq('email', email);
+
     } else {
-      // Email nou — inserăm în baza de date
+      // Email nou — inserăm cu UTM params
       const { error: dbError } = await supabaseAdmin
         .from('email_subscribers')
         .insert({
@@ -105,6 +113,9 @@ export async function POST(request: NextRequest) {
           token_expires_at: tokenExpiresAt.toISOString(),
           source: 'landing-page',
           ip_hash: hashIP(ip),
+          utm_source,
+          utm_medium,
+          utm_campaign,
         });
 
       if (dbError) {
@@ -116,7 +127,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Trimitem emailul de confirmare
     await sendConfirmationEmail(email, token);
 
     return NextResponse.json(
