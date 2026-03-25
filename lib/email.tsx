@@ -1,7 +1,42 @@
 // lib/email.tsx
 import { Resend } from 'resend';
+import crypto from 'crypto';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// ── TOKEN HELPERS ──────────────────────────────────────────────────────────────
+
+export function generateUnsubscribeToken(email: string): string {
+  const secret = process.env.UNSUBSCRIBE_SECRET!;
+  const payload = Buffer.from(email.toLowerCase().trim()).toString('base64url');
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+export function verifyUnsubscribeToken(token: string): string | null {
+  try {
+    const secret = process.env.UNSUBSCRIBE_SECRET!;
+    const [payload, signature] = token.split('.');
+    if (!payload || !signature) return null;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(payload)
+      .digest('base64url');
+    // Comparație timing-safe pentru a preveni timing attacks
+    const sigBuffer = Buffer.from(signature);
+    const expBuffer = Buffer.from(expectedSignature);
+    if (sigBuffer.length !== expBuffer.length) return null;
+    if (!crypto.timingSafeEqual(sigBuffer, expBuffer)) return null;
+    return Buffer.from(payload, 'base64url').toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+// ── EMAIL ──────────────────────────────────────────────────────────────────────
 
 export async function sendConfirmationEmail(
   email: string,
@@ -9,7 +44,10 @@ export async function sendConfirmationEmail(
 ): Promise<void> {
   const baseUrl = 'https://martinavalenti.com';
   const confirmUrl = `${baseUrl}/api/confirm?token=${token}`;
-  const unsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}`;
+
+  // Unsubscribe URL cu token semnat în loc de email plain text
+  const unsubscribeToken = generateUnsubscribeToken(email);
+  const unsubscribeUrl = `${baseUrl}/unsubscribe?token=${unsubscribeToken}`;
 
   await resend.emails.send({
     from: 'Martina <hello@mail.martinavalenti.com>',
