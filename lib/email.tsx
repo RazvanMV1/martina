@@ -7,7 +7,7 @@ export async function sendConfirmationEmail(
   email: string,
   token: string
 ): Promise<void> {
-  const confirmUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/confirm?token=${token}`;
+  const confirmUrl = `${process.env.APP_URL}/api/confirm?token=${token}`;
 
   await resend.emails.send({
     from: 'Martina <hello@mail.martinavalenti.com>',
