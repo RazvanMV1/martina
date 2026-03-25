@@ -9,18 +9,25 @@ export async function sendConfirmationEmail(
 ): Promise<void> {
   const baseUrl = 'https://martinavalenti.com';
   const confirmUrl = `${baseUrl}/api/confirm?token=${token}`;
+  const unsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}`;
 
   await resend.emails.send({
     from: 'Martina <hello@mail.martinavalenti.com>',
     to: email,
     subject: 'You requested access — confirm here',
-    text: `Not everyone gets in. You might be the exception.\n\nConfirm your access here: ${confirmUrl}\n\nThis link expires in 24 hours. If you didn't request this, ignore this email.`,
+    headers: {
+      'List-Unsubscribe': `<mailto:hello@mail.martinavalenti.com?subject=unsubscribe>, <${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+    text: `Not everyone gets in. You might be the exception.\n\nConfirm your access here: ${confirmUrl}\n\nThis link expires in 24 hours. If you didn't request this, ignore this email.\n\nUnsubscribe: ${unsubscribeUrl}`,
     html: `
       <!DOCTYPE html>
       <html lang="en">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="color-scheme" content="dark">
+          <meta name="supported-color-schemes" content="dark">
         </head>
         <body style="
           margin: 0;
@@ -28,11 +35,11 @@ export async function sendConfirmationEmail(
           background-color: #000000;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         ">
-          <table width="100%" cellpadding="0" cellspacing="0">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td align="center" style="padding: 40px 20px;">
 
-                <table width="100%" cellpadding="0" cellspacing="0" style="
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="
                   max-width: 480px;
                   background-color: #0d0d0d;
                   border-radius: 16px;
@@ -92,7 +99,7 @@ export async function sendConfirmationEmail(
                       </p>
 
                       <!-- CTA BUTTON -->
-                      <table width="100%" cellpadding="0" cellspacing="0">
+                      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                         <tr>
                           <td align="center" style="padding: 4px 0 28px;">
                             <a href="${confirmUrl}" style="
@@ -107,7 +114,7 @@ export async function sendConfirmationEmail(
                               text-transform: uppercase;
                               border-radius: 12px;
                             ">
-                              Confirm My Access →
+                              Confirm My Access &#8594;
                             </a>
                           </td>
                         </tr>
@@ -150,13 +157,20 @@ export async function sendConfirmationEmail(
                       text-align: center;
                     ">
                       <p style="
-                        margin: 0;
+                        margin: 0 0 8px;
                         font-size: 10px;
                         color: #374151;
                         letter-spacing: 0.05em;
                       ">
                         Discreet &nbsp;·&nbsp; Select members only &nbsp;·&nbsp; Unsubscribe anytime
                       </p>
+                      <a href="${unsubscribeUrl}" style="
+                        font-size: 10px;
+                        color: #374151;
+                        text-decoration: underline;
+                      ">
+                        Unsubscribe
+                      </a>
                     </td>
                   </tr>
 
