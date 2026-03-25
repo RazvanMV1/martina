@@ -119,6 +119,7 @@ export default function HomePage() {
           </div>
           <span
             className="absolute bottom-0.5 left-14 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-black shadow-lg shadow-emerald-400/60"
+            role="img"
             aria-label="Online"
           />
         </div>
