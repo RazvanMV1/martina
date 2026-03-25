@@ -7,7 +7,9 @@ export async function sendConfirmationEmail(
   email: string,
   token: string
 ): Promise<void> {
-  const confirmUrl = `${process.env.APP_URL}/api/confirm?token=${token}`;
+  // Hardcodat — nu depinde de variabile de environment
+  const baseUrl = 'https://martinavalenti.com';
+  const confirmUrl = `${baseUrl}/api/confirm?token=${token}`;
 
   await resend.emails.send({
     from: 'Martina <hello@mail.martinavalenti.com>',
@@ -34,7 +36,6 @@ export async function sendConfirmationEmail(
             border-radius: 16px;
             overflow: hidden;
           ">
-            <!-- HEADER -->
             <tr>
               <td style="
                 padding: 40px 40px 20px;
@@ -58,8 +59,6 @@ export async function sendConfirmationEmail(
                 ">One step away from<br/>my secret world 🔥</h1>
               </td>
             </tr>
-
-            <!-- BODY -->
             <tr>
               <td style="padding: 24px 40px;">
                 <p style="
@@ -72,8 +71,6 @@ export async function sendConfirmationEmail(
                   Click the button below to confirm your email and 
                   unlock the link to my Telegram.
                 </p>
-
-                <!-- CTA BUTTON -->
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td align="center" style="padding: 8px 0 24px;">
@@ -94,7 +91,6 @@ export async function sendConfirmationEmail(
                     </td>
                   </tr>
                 </table>
-
                 <p style="
                   margin: 0;
                   font-size: 12px;
@@ -106,8 +102,6 @@ export async function sendConfirmationEmail(
                 </p>
               </td>
             </tr>
-
-            <!-- FOOTER -->
             <tr>
               <td style="
                 padding: 20px 40px;
