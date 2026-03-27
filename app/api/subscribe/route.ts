@@ -19,7 +19,7 @@ const subscribeSchema = z.object({
 });
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_MAX = 5; // Relaxat puțin pentru teste
 const RATE_LIMIT_WINDOW = 60000;
 
 function isRateLimited(identifier: string): boolean {
@@ -49,22 +49,36 @@ function generateToken(): string {
 // LOGICA AWEBER (OAuth2 Refresh + Get Access Token)
 // ─────────────────────────────────────────────────────────────────────────────
 async function getAWeberAccessToken() {
-  const { data: setting } = await supabaseAdmin
+  console.log('--- AWEBER AUTH START ---');
+  
+  // 1. Încercăm Supabase
+  const { data: setting, error: dbErr } = await supabaseAdmin
     .from('app_settings')
     .select('value')
     .eq('key', 'aweber_refresh_token')
     .single();
 
-  const refreshToken = setting?.value || process.env.AWEBER_REFRESH_TOKEN;
+  let refreshToken = setting?.value;
+  
+  if (refreshToken) {
+    console.log('Using Refresh Token from SUPABASE:', refreshToken.substring(0, 10) + '...');
+  } else {
+    console.log('No token in Supabase, trying .env...');
+    refreshToken = process.env.AWEBER_REFRESH_TOKEN;
+    if (refreshToken) console.log('Using Refresh Token from .ENV:', refreshToken.substring(0, 10) + '...');
+  }
 
   if (!refreshToken) {
-    throw new Error('MISSING_REFRESH_TOKEN: Check Supabase app_settings table.');
+    console.error('CRITICAL: No refresh token found anywhere!');
+    throw new Error('MISSING_REFRESH_TOKEN');
   }
 
   const authHeader = Buffer.from(
     `${process.env.AWEBER_CLIENT_ID}:${process.env.AWEBER_CLIENT_SECRET}`
   ).toString('base64');
 
+  console.log('Requesting new Access Token from AWeber...');
+  
   const response = await fetch('https://auth.aweber.com/oauth2/token', {
     method: 'POST',
     headers: {
@@ -80,13 +94,21 @@ async function getAWeberAccessToken() {
   const data = await response.json();
 
   if (!response.ok) {
+    console.error('AWEBER OAUTH ERROR:', data);
     throw new Error(`AUTH_FAILED: ${data.error_description || data.error}`);
   }
 
+  console.log('New Access Token obtained successfully.');
+
+  // 2. SALVĂM noul refresh token imediat
   if (data.refresh_token) {
-    await supabaseAdmin
+    console.log('Saving NEW Refresh Token to Supabase...');
+    const { error: upsertErr } = await supabaseAdmin
       .from('app_settings')
       .upsert({ key: 'aweber_refresh_token', value: data.refresh_token });
+    
+    if (upsertErr) console.error('Failed to save new token to DB:', upsertErr);
+    else console.log('New Refresh Token saved.');
   }
 
   return data.access_token;
@@ -96,6 +118,7 @@ async function getAWeberAccessToken() {
 // MAIN POST ROUTE
 // ─────────────────────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
+  console.log('--- NEW SUBSCRIBE REQUEST ---');
   try {
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -103,6 +126,7 @@ export async function POST(request: NextRequest) {
       'unknown';
 
     if (isRateLimited(ip)) {
+      console.warn('Rate limit hit for IP:', ip);
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 
@@ -114,10 +138,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, utm_source, utm_medium, utm_campaign } = validation.data;
+    console.log('Processing email:', email);
+    
     const token = generateToken();
     const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // 1. SUPABASE - Salvare date
+    // 1. SUPABASE
     const { data: existing } = await supabaseAdmin
       .from('email_subscribers')
       .select('id, status')
@@ -125,9 +151,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existing) {
-      if (existing.status === 'confirmed') {
-        return NextResponse.json({ success: true, message: 'Already confirmed' }, { status: 200 });
-      }
+      console.log('Subscriber exists, updating...');
       await supabaseAdmin
         .from('email_subscribers')
         .update({
@@ -139,6 +163,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('email', email);
     } else {
+      console.log('New subscriber, inserting to DB...');
       await supabaseAdmin.from('email_subscribers').insert({
         email,
         status: 'pending',
@@ -152,12 +177,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. AWEBER - Integrare API conform documentației
+    // 2. AWEBER
     try {
       const accessToken = await getAWeberAccessToken();
-      // Curățăm ID-urile de orice prefix text (awlist/account)
       const accountId = process.env.AWEBER_ACCOUNT_ID?.replace(/\D/g, '');
       const listId = process.env.AWEBER_LIST_ID?.replace(/\D/g, '');
+
+      console.log(`Sending to AWeber: Account ${accountId}, List ${listId}`);
 
       const aweberUrl = `https://api.aweber.com/1.0/accounts/${accountId}/lists/${listId}/subscribers`;
 
@@ -169,29 +195,31 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           email: email,
-          update_existing: "true", // Permite actualizarea dacă există deja
+          update_existing: "true",
           custom_fields: {
-            "verification_token": token // Trebuie să existe în AWeber List Settings
+            "verification_token": token
           },
           tags: ["confirmare_pending", utm_source],
-          ad_tracking: utm_campaign.substring(0, 20), // Limita documentației: 20 caractere
+          ad_tracking: utm_campaign.substring(0, 20),
           ip_address: ip === 'unknown' ? '127.0.0.1' : ip
         }),
       });
 
       if (!aweberResponse.ok) {
         const rawErrorText = await aweberResponse.text();
-        console.error('AWeber API Detailed Error:', rawErrorText);
+        console.error('AWEBER API ERROR:', rawErrorText);
         return NextResponse.json(
           { error: `AWeber Error: ${rawErrorText}` },
           { status: 500 }
         );
       }
       
+      console.log('SUCCESS: Subscriber added/updated in AWeber.');
+
     } catch (aweberError: any) {
-      console.error('AWeber Integration Block Error:', aweberError.message);
+      console.error('AWEBER INTEGRATION CRASHED:', aweberError.message);
       return NextResponse.json(
-        { error: `Auth/Connection: ${aweberError.message}` },
+        { error: `AWeber: ${aweberError.message}` },
         { status: 500 }
       );
     }
@@ -199,7 +227,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, message: 'Check your inbox!' }, { status: 201 });
 
   } catch (error) {
-    console.error('Global Error:', error);
+    console.error('GLOBAL ROUTE ERROR:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
