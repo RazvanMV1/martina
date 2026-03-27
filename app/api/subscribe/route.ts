@@ -1,12 +1,10 @@
-// app/api/subscribe/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createHash, randomBytes } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
-import { sendConfirmationEmail } from '@/lib/email';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCHEMA DE VALIDARE — include UTM params
+// SCHEMA DE VALIDARE
 // ─────────────────────────────────────────────────────────────────────────────
 const subscribeSchema = z.object({
   email: z
@@ -38,7 +36,7 @@ function isRateLimited(identifier: string): boolean {
 
 function hashIP(ip: string): string {
   return createHash('sha256')
-    .update(ip + process.env.SUPABASE_SERVICE_ROLE_KEY)
+    .update(ip + (process.env.SUPABASE_SERVICE_ROLE_KEY || ''))
     .digest('hex')
     .substring(0, 16);
 }
@@ -47,6 +45,59 @@ function generateToken(): string {
   return randomBytes(32).toString('hex');
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGICA AWEBER (OAuth2 Refresh + Get Access Token)
+// ─────────────────────────────────────────────────────────────────────────────
+async function getAWeberAccessToken() {
+  // 1. Încercăm să luăm refresh token-ul din baza de date
+  const { data: setting } = await supabaseAdmin
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'aweber_refresh_token')
+    .single();
+
+  // Dacă nu există în DB, îl folosim pe cel inițial din .env
+  const refreshToken = setting?.value || process.env.AWEBER_REFRESH_TOKEN;
+
+  if (!refreshToken) {
+    throw new Error('No AWeber refresh token found in DB or ENV');
+  }
+
+  const authHeader = Buffer.from(
+    `${process.env.AWEBER_CLIENT_ID}:${process.env.AWEBER_CLIENT_SECRET}`
+  ).toString('base64');
+
+  const response = await fetch('https://auth.aweber.com/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${authHeader}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`AWeber Token Refresh Failed: ${data.error_description || data.error}`);
+  }
+
+  // 2. SALVĂM noul refresh token în DB (pentru că cel vechi a expirat prin folosire)
+  if (data.refresh_token) {
+    await supabaseAdmin
+      .from('app_settings')
+      .upsert({ key: 'aweber_refresh_token', value: data.refresh_token });
+  }
+
+  return data.access_token;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN POST ROUTE
+// ─────────────────────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const ip =
@@ -75,7 +126,7 @@ export async function POST(request: NextRequest) {
     const token = generateToken();
     const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Verificăm dacă emailul există deja
+    // 1. LOGICA SUPABASE — Verificăm/Actualizăm/Inserăm subscriber
     const { data: existing } = await supabaseAdmin
       .from('email_subscribers')
       .select('id, status')
@@ -89,8 +140,6 @@ export async function POST(request: NextRequest) {
           { status: 200 }
         );
       }
-
-      // Emailul există dar nu este confirmat — actualizăm tokenul și UTM-urile
       await supabaseAdmin
         .from('email_subscribers')
         .update({
@@ -101,9 +150,7 @@ export async function POST(request: NextRequest) {
           utm_campaign,
         })
         .eq('email', email);
-
     } else {
-      // Email nou — inserăm cu UTM params
       const { error: dbError } = await supabaseAdmin
         .from('email_subscribers')
         .insert({
@@ -127,7 +174,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await sendConfirmationEmail(email, token);
+    // 2. LOGICA AWEBER — Trimitem datele pentru a declanșa mail-ul custom
+    try {
+      const accessToken = await getAWeberAccessToken();
+      const accountId = process.env.AWEBER_ACCOUNT_ID;
+      const listId = process.env.AWEBER_LIST_ID;
+
+      const aweberUrl = `https://api.aweber.com/1.0/accounts/${accountId}/lists/${listId}/subscribers`;
+
+      const aweberResponse = await fetch(aweberUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          // Injectăm token-ul generat mai sus în câmpul personalizat din AWeber
+          custom_fields: {
+            'verification_token': token 
+          },
+          // Tag-ul care pornește Campania în AWeber
+          tags: ['confirmare_pending', utm_source],
+          ad_tracking: utm_campaign,
+        }),
+      });
+
+      if (!aweberResponse.ok) {
+        const errorData = await aweberResponse.json();
+        console.error('AWeber API Error:', errorData);
+      }
+      
+    } catch (aweberError) {
+      // Logăm eroarea dar nu blocăm userul (datele sunt deja în Supabase)
+      console.error('AWeber Integration Error:', aweberError);
+    }
 
     return NextResponse.json(
       { success: true, message: 'Check your inbox!' },
