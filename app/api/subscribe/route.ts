@@ -49,7 +49,7 @@ function generateToken(): string {
 // LOGICA AWEBER (OAuth2 Refresh + Get Access Token)
 // ─────────────────────────────────────────────────────────────────────────────
 async function getAWeberAccessToken() {
-  // 1. Încercăm să luăm refresh token-ul din baza de date
+  // 1. Încercăm să luăm refresh token-ul din baza de date (pentru continuitate)
   const { data: setting } = await supabaseAdmin
     .from('app_settings')
     .select('value')
@@ -60,7 +60,7 @@ async function getAWeberAccessToken() {
   const refreshToken = setting?.value || process.env.AWEBER_REFRESH_TOKEN;
 
   if (!refreshToken) {
-    throw new Error('No AWeber refresh token found in DB or ENV');
+    throw new Error('MISSING_REFRESH_TOKEN: No token found in DB or .env');
   }
 
   const authHeader = Buffer.from(
@@ -82,10 +82,10 @@ async function getAWeberAccessToken() {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(`AWeber Token Refresh Failed: ${data.error_description || data.error}`);
+    throw new Error(`AWEBER_AUTH_FAILED: ${data.error_description || data.error}`);
   }
 
-  // 2. SALVĂM noul refresh token în DB (pentru că cel vechi a expirat prin folosire)
+  // 2. SALVĂM noul refresh token în DB (obligatoriu, cel vechi devine invalid după utilizare)
   if (data.refresh_token) {
     await supabaseAdmin
       .from('app_settings')
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     const token = generateToken();
     const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // 1. LOGICA SUPABASE — Verificăm/Actualizăm/Inserăm subscriber
+    // 1. LOGICA SUPABASE — Inserare/Actualizare subscriber
     const { data: existing } = await supabaseAdmin
       .from('email_subscribers')
       .select('id, status')
@@ -166,15 +166,14 @@ export async function POST(request: NextRequest) {
         });
 
       if (dbError) {
-        console.error('Database error:', dbError);
         return NextResponse.json(
-          { error: 'Something went wrong. Please try again.' },
+          { error: 'Database saving failed.' },
           { status: 500 }
         );
       }
     }
 
-    // 2. LOGICA AWEBER — Trimitem datele pentru a declanșa mail-ul custom
+    // 2. LOGICA AWEBER — Integrare API
     try {
       const accessToken = await getAWeberAccessToken();
       const accountId = process.env.AWEBER_ACCOUNT_ID;
@@ -190,11 +189,9 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           email,
-          // Injectăm token-ul generat mai sus în câmpul personalizat din AWeber
           custom_fields: {
             'verification_token': token 
           },
-          // Tag-ul care pornește Campania în AWeber
           tags: ['confirmare_pending', utm_source],
           ad_tracking: utm_campaign,
         }),
@@ -202,21 +199,30 @@ export async function POST(request: NextRequest) {
 
       if (!aweberResponse.ok) {
         const errorData = await aweberResponse.json();
-        console.error('AWeber API Error:', errorData);
+        // Trimitem eroarea AWeber direct către frontend pentru debug
+        return NextResponse.json(
+          { error: `AWeber API: ${errorData.error.message || 'Unknown error'}` },
+          { status: 500 }
+        );
       }
       
-    } catch (aweberError) {
-      // Logăm eroarea dar nu blocăm userul (datele sunt deja în Supabase)
-      console.error('AWeber Integration Error:', aweberError);
+    } catch (aweberError: any) {
+      console.error('AWeber Integration Error:', aweberError.message);
+      // Dacă e eroare de token/auth, o trimitem la browser să o vedem
+      return NextResponse.json(
+        { error: `AWeber Auth: ${aweberError.message}` },
+        { status: 500 }
+      );
     }
 
+    // Dacă totul a mers bine
     return NextResponse.json(
       { success: true, message: 'Check your inbox!' },
       { status: 201 }
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Global Error:', error);
     return NextResponse.json(
       { error: 'Internal server error.' },
       { status: 500 }
