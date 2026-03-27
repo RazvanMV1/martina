@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('email_subscribers')
-      .select('id, status, token_expires_at')
+      .select('id, email, status, token_expires_at')
       .eq('token', token)
       .single();
 
@@ -36,7 +36,9 @@ export async function GET(request: NextRequest) {
       })
       .eq('id', data.id);
 
-    return NextResponse.redirect(`${BASE_URL}/welcome`);
+    // Redirect prin telegram-redirect pentru logging
+    const telegramRedirectUrl = `${BASE_URL}/api/telegram-redirect?email=${encodeURIComponent(data.email)}`;
+    return NextResponse.redirect(telegramRedirectUrl);
 
   } catch (error) {
     console.error('Confirm error:', error);
