@@ -58,23 +58,35 @@ export default function HomePage() {
 
           {/* Headline */}
           <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-white leading-tight mb-4">
-            Not everyone gets in.{' '}
+            She doesn&apos;t show this{' '}
+            <span className="block">to everyone.</span>
             <span
               className="italic font-normal text-rose-300 block"
               style={{ fontFamily: 'var(--font-playfair)' }}
             >
-              You might be the exception.
+              You just made the list.
             </span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-sm lg:text-base text-gray-400 font-light leading-relaxed mb-7 max-w-sm">
-            A private circle. No filters. No performance.{' '}
-            <strong className="text-white font-medium">Just the real me.</strong>
+          <p className="text-sm lg:text-base text-gray-400 font-light leading-relaxed mb-3 max-w-sm">
+            A private world Martina keeps separate from social media.
+            Exclusive content, real moments, nothing held back —{' '}
+            <strong className="text-white font-medium">free access, by invitation only.</strong>
+          </p>
+
+          {/* Scarcity */}
+          <p className="text-xs text-rose-300/70 font-medium tracking-wide mb-6">
+            ⚡ Spots are limited — she keeps this circle small.
           </p>
 
           {/* Form */}
           <SubscribeForm />
+
+          {/* Microcopy */}
+          <p className="mt-3 text-xs text-gray-600">
+            🔒 100% discreet · Free forever · Cancel anytime
+          </p>
 
         </div>
 
@@ -109,6 +121,7 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Online indicator */}
           <div className="flex items-center gap-2">
             <span
               className="w-2 h-2 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/60"
@@ -119,6 +132,11 @@ export default function HomePage() {
               <strong className="text-white font-medium">Martina Valenti</strong> · Online now
             </span>
           </div>
+
+          {/* Social proof — applications reviewed */}
+          <p className="text-[0.65rem] text-gray-600 tracking-widest uppercase text-center">
+            Applications reviewed manually
+          </p>
 
         </div>
       </div>
@@ -170,25 +188,40 @@ export default function HomePage() {
 
         {/* Headline */}
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight mb-3">
-          Not everyone gets in.{' '}
+          She doesn&apos;t show this to everyone.{' '}
           <span
             className="italic font-normal text-rose-300 block"
             style={{ fontFamily: 'var(--font-playfair)' }}
           >
-            You might be the exception.
+            You just made the list.
           </span>
         </h1>
 
         {/* Subheadline */}
-        <p className="text-sm text-gray-400 font-light leading-relaxed mb-5 max-w-xs">
-          A private circle. No filters. No performance.{' '}
-          <strong className="text-white font-medium">Just the real me.</strong>
+        <p className="text-sm text-gray-400 font-light leading-relaxed mb-3 max-w-xs">
+          Exclusive content, real moments, nothing held back —{' '}
+          <strong className="text-white font-medium">free access, by invitation only.</strong>
+        </p>
+
+        {/* Scarcity */}
+        <p className="text-xs text-rose-300/70 font-medium tracking-wide mb-5">
+          ⚡ Spots are limited — she keeps this circle small.
         </p>
 
         {/* Form */}
         <div className="w-full max-w-sm">
           <SubscribeForm />
         </div>
+
+        {/* Microcopy */}
+        <p className="mt-3 text-xs text-gray-600">
+          🔒 100% discreet · Free forever · Cancel anytime
+        </p>
+
+        {/* Social proof */}
+        <p className="mt-2 text-[0.65rem] text-gray-700 tracking-widest uppercase">
+          Applications reviewed manually
+        </p>
 
       </div>
 
