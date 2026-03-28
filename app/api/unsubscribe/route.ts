@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { verifyUnsubscribeToken } from '@/lib/email';
+import { verifyUnsubscribeToken } from '@/lib/tokens';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

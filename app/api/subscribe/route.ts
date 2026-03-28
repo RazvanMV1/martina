@@ -18,22 +18,15 @@ const subscribeSchema = z.object({
   utm_campaign: z.string().max(100).optional().default('none'),
 });
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 5; // Relaxat puțin pentru teste
-const RATE_LIMIT_WINDOW = 60000;
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTE RATE LIMITING
+// ─────────────────────────────────────────────────────────────────────────────
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW = 60000; // 60 secunde in ms
 
-function isRateLimited(identifier: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(identifier);
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(identifier, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
-    return false;
-  }
-  if (record.count >= RATE_LIMIT_MAX) return true;
-  record.count++;
-  return false;
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// UTILITARE
+// ─────────────────────────────────────────────────────────────────────────────
 function hashIP(ip: string): string {
   return createHash('sha256')
     .update(ip + (process.env.SUPABASE_SERVICE_ROLE_KEY || ''))
@@ -46,30 +39,57 @@ function generateToken(): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// RATE LIMITING PRIN SUPABASE
+// ─────────────────────────────────────────────────────────────────────────────
+async function isRateLimited(ip: string): Promise<boolean> {
+  const ipHash = hashIP(ip);
+  const now = new Date();
+
+  const { data: record } = await supabaseAdmin
+    .from('rate_limits')
+    .select('count, reset_at')
+    .eq('ip_hash', ipHash)
+    .single();
+
+  // Nu există record sau a expirat — resetăm
+  if (!record || new Date(record.reset_at) < now) {
+    await supabaseAdmin
+      .from('rate_limits')
+      .upsert({
+        ip_hash: ipHash,
+        count: 1,
+        reset_at: new Date(Date.now() + RATE_LIMIT_WINDOW).toISOString(),
+      });
+    return false;
+  }
+
+  // A depășit limita
+  if (record.count >= RATE_LIMIT_MAX) return true;
+
+  // Incrementăm contorul
+  await supabaseAdmin
+    .from('rate_limits')
+    .update({ count: record.count + 1 })
+    .eq('ip_hash', ipHash);
+
+  return false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // LOGICA AWEBER (OAuth2 Refresh + Get Access Token)
 // ─────────────────────────────────────────────────────────────────────────────
-async function getAWeberAccessToken() {
+async function getAWeberAccessToken(): Promise<string> {
   console.log('--- AWEBER AUTH START ---');
-  
-  // 1. Încercăm Supabase
-  const { data: setting, error: dbErr } = await supabaseAdmin
+
+  const { data: setting } = await supabaseAdmin
     .from('app_settings')
     .select('value')
     .eq('key', 'aweber_refresh_token')
     .single();
 
-  let refreshToken = setting?.value;
-  
-  if (refreshToken) {
-    console.log('Using Refresh Token from SUPABASE:', refreshToken.substring(0, 10) + '...');
-  } else {
-    console.log('No token in Supabase, trying .env...');
-    refreshToken = process.env.AWEBER_REFRESH_TOKEN;
-    if (refreshToken) console.log('Using Refresh Token from .ENV:', refreshToken.substring(0, 10) + '...');
-  }
+  const refreshToken = setting?.value || process.env.AWEBER_REFRESH_TOKEN;
 
   if (!refreshToken) {
-    console.error('CRITICAL: No refresh token found anywhere!');
     throw new Error('MISSING_REFRESH_TOKEN');
   }
 
@@ -77,12 +97,10 @@ async function getAWeberAccessToken() {
     `${process.env.AWEBER_CLIENT_ID}:${process.env.AWEBER_CLIENT_SECRET}`
   ).toString('base64');
 
-  console.log('Requesting new Access Token from AWeber...');
-  
   const response = await fetch('https://auth.aweber.com/oauth2/token', {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${authHeader}`,
+      Authorization: `Basic ${authHeader}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
@@ -98,17 +116,10 @@ async function getAWeberAccessToken() {
     throw new Error(`AUTH_FAILED: ${data.error_description || data.error}`);
   }
 
-  console.log('New Access Token obtained successfully.');
-
-  // 2. SALVĂM noul refresh token imediat
   if (data.refresh_token) {
-    console.log('Saving NEW Refresh Token to Supabase...');
-    const { error: upsertErr } = await supabaseAdmin
+    await supabaseAdmin
       .from('app_settings')
       .upsert({ key: 'aweber_refresh_token', value: data.refresh_token });
-    
-    if (upsertErr) console.error('Failed to save new token to DB:', upsertErr);
-    else console.log('New Refresh Token saved.');
   }
 
   return data.access_token;
@@ -119,39 +130,42 @@ async function getAWeberAccessToken() {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   console.log('--- NEW SUBSCRIBE REQUEST ---');
+
   try {
+    // 1. DETECTARE IP
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||
       'unknown';
 
-    if (isRateLimited(ip)) {
-      console.warn('Rate limit hit for IP:', ip);
+    // 2. RATE LIMITING
+    if (await isRateLimited(ip)) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 
+    // 3. VALIDARE INPUT
     const body = await request.json();
     const validation = subscribeSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
+      return NextResponse.json(
+        { error: validation.error.issues[0].message },
+        { status: 400 }
+      );
     }
 
     const { email, utm_source, utm_medium, utm_campaign } = validation.data;
-    console.log('Processing email:', email);
-    
     const token = generateToken();
     const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // 1. SUPABASE
+    // 4. SUPABASE SYNC
     const { data: existing } = await supabaseAdmin
       .from('email_subscribers')
-      .select('id, status')
+      .select('id')
       .eq('email', email)
       .single();
 
     if (existing) {
-      console.log('Subscriber exists, updating...');
       await supabaseAdmin
         .from('email_subscribers')
         .update({
@@ -163,7 +177,6 @@ export async function POST(request: NextRequest) {
         })
         .eq('email', email);
     } else {
-      console.log('New subscriber, inserting to DB...');
       await supabaseAdmin.from('email_subscribers').insert({
         email,
         status: 'pending',
@@ -177,61 +190,54 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. AWEBER
-    try {
-      const accessToken = await getAWeberAccessToken();
-      const accountId = process.env.AWEBER_ACCOUNT_ID?.replace(/\D/g, '');
-      const listId = process.env.AWEBER_LIST_ID?.replace(/\D/g, '');
+    // 5. AWEBER SYNC
+    const accessToken = await getAWeberAccessToken();
+    const accountId = process.env.AWEBER_ACCOUNT_ID?.replace(/\D/g, '');
+    const listId = process.env.AWEBER_LIST_ID?.replace(/\D/g, '');
 
-      console.log(`Sending to AWeber: Account ${accountId}, List ${listId}`);
+    console.log(`Pushing to AWeber... Account: ${accountId}, List: ${listId}`);
 
-      const aweberUrl = `https://api.aweber.com/1.0/accounts/${accountId}/lists/${listId}/subscribers`;
+    const aweberUrl = `https://api.aweber.com/1.0/accounts/${accountId}/lists/${listId}/subscribers`;
 
-      const aweberResponse = await fetch(aweberUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+    const aweberResponse = await fetch(aweberUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        update_existing: 'true',
+        custom_fields: {
+          verification_token: token,
         },
-        body: JSON.stringify({
-          email: email,
-          update_existing: "true",
-          custom_fields: {
-            "verification_token": token
-          },
-          tags: ["confirmare_pending", utm_source],
-          ad_tracking: utm_campaign.substring(0, 20),
-          ip_address: ip === 'unknown' ? '127.0.0.1' : ip
-        }),
-      });
+        tags: ['confirmare_pending', utm_source],
+        ad_tracking: utm_campaign.substring(0, 20),
+        ...(ip !== 'unknown' && { ip_address: ip }),
+      }),
+    });
 
-      if (!aweberResponse.ok) {
-        const rawErrorText = await aweberResponse.text();
-        console.error('AWEBER API ERROR:', rawErrorText);
-        return NextResponse.json(
-          { error: `AWeber Error: ${rawErrorText}` },
-          { status: 500 }
-        );
-      }
-      
-      console.log('SUCCESS: Subscriber added/updated in AWeber.');
-
-    } catch (aweberError: any) {
-      console.error('AWEBER INTEGRATION CRASHED:', aweberError.message);
+    if (!aweberResponse.ok) {
+      const errorData = await aweberResponse.json();
+      console.error('AWEBER API ERROR:', errorData);
       return NextResponse.json(
-        { error: `AWeber: ${aweberError.message}` },
-        { status: 500 }
+        { error: `AWeber Error: ${errorData.message || 'Unknown'}` },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json({ success: true, message: 'Check your inbox!' }, { status: 201 });
+    console.log('✅ SUCCESS: Subscriber synced with AWeber.');
+    return NextResponse.json({ success: true }, { status: 201 });
 
-  } catch (error) {
-    console.error('GLOBAL ROUTE ERROR:', error);
+  } catch (error: any) {
+    console.error('GLOBAL ERROR:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET — NOT ALLOWED
+// ─────────────────────────────────────────────────────────────────────────────
 export async function GET() {
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }

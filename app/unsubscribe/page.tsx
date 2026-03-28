@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import UnsubscribeForm from '@/components/UnsubscribeForm';
 import { createClient } from '@supabase/supabase-js';
-import { verifyUnsubscribeToken } from '@/lib/email';
+import { verifyUnsubscribeToken } from '@/lib/tokens';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
