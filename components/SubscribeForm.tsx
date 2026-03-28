@@ -3,9 +3,12 @@
 
 import { useState, FormEvent, useEffect, useCallback } from 'react';
 
-export default function SubscribeForm() {
+interface SubscribeFormProps {
+  onSuccess: () => void;
+}
+
+export default function SubscribeForm({ onSuccess }: SubscribeFormProps) {
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [utmParams, setUtmParams] = useState({
@@ -41,49 +44,14 @@ export default function SubscribeForm() {
         throw new Error(data.error || 'Something went wrong. Please try again.');
       }
 
-      setSubmitted(true);
+      onSuccess();
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [email, utmParams]);
-
-  if (submitted) {
-    return (
-      <div className="flex flex-col items-start gap-3" role="status" aria-live="polite">
-
-        <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            className="w-6 h-6 text-emerald-400"
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
-        </div>
-
-        <p className="text-white font-semibold text-base">
-          Access granted. Check your inbox.
-        </p>
-
-        <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
-          We sent you a confirmation email.
-          Click the link inside to unlock access to the private circle.
-        </p>
-
-        <p className="text-gray-700 text-xs">
-          Don&apos;t see it? Check your spam folder.
-        </p>
-
-      </div>
-    );
-  }
+  }, [email, utmParams, onSuccess]);
 
   return (
     <>
