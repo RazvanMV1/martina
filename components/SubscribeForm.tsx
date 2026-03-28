@@ -54,7 +54,6 @@ export default function SubscribeForm() {
     return (
       <div className="flex flex-col items-start gap-3" role="status" aria-live="polite">
 
-        {/* Icon */}
         <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -69,18 +68,15 @@ export default function SubscribeForm() {
           </svg>
         </div>
 
-        {/* Mesaj principal */}
         <p className="text-white font-semibold text-base">
           Access granted. Check your inbox.
         </p>
 
-        {/* Instrucțiuni — fără link Telegram */}
         <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
           We sent you a confirmation email.
           Click the link inside to unlock access to the private circle.
         </p>
 
-        {/* Hint discret */}
         <p className="text-gray-700 text-xs">
           Don&apos;t see it? Check your spam folder.
         </p>
@@ -146,12 +142,6 @@ export default function SubscribeForm() {
           {error}
         </p>
       )}
-
-      <p className="mt-3 text-xs text-gray-600 tracking-wide">
-        🔒 Discreet.{' '}
-        <span className="text-gray-500">Select members only.</span>{' '}
-        Free to join.
-      </p>
     </>
   );
 }

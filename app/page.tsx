@@ -70,7 +70,6 @@ export default function HomePage() {
 
           {/* Subheadline */}
           <p className="text-sm lg:text-base text-gray-400 font-light leading-relaxed mb-3 max-w-sm">
-            A private world Martina keeps separate from social media.
             Exclusive content, real moments, nothing held back —{' '}
             <strong className="text-white font-medium">free access, by invitation only.</strong>
           </p>
@@ -83,7 +82,7 @@ export default function HomePage() {
           {/* Form */}
           <SubscribeForm />
 
-          {/* Microcopy */}
+          {/* Microcopy — unic, clar, fara duplicat */}
           <p className="mt-3 text-xs text-gray-600">
             🔒 100% discreet · Free forever · Cancel anytime
           </p>
@@ -133,7 +132,7 @@ export default function HomePage() {
             </span>
           </div>
 
-          {/* Social proof — applications reviewed */}
+          {/* Social proof */}
           <p className="text-[0.65rem] text-gray-600 tracking-widest uppercase text-center">
             Applications reviewed manually
           </p>
@@ -213,7 +212,7 @@ export default function HomePage() {
           <SubscribeForm />
         </div>
 
-        {/* Microcopy */}
+        {/* Microcopy — unic, fara duplicat */}
         <p className="mt-3 text-xs text-gray-600">
           🔒 100% discreet · Free forever · Cancel anytime
         </p>
