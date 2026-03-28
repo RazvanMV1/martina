@@ -130,8 +130,10 @@ export default function HomePage() {
               {/* Instructiuni clare */}
               <p className="text-sm lg:text-base text-gray-400 font-light leading-relaxed">
                 We sent you a confirmation email.{' '}
-                <strong className="text-white font-medium">Open it and click the link</strong>{' '}
-                to unlock your exclusive access. It only takes a second.
+                <strong className="text-white font-medium">
+                  Open it and click the link
+                </strong>{' '}
+                to unlock your exclusive access — it only takes a second.
               </p>
 
               {/* Steps vizuali */}
