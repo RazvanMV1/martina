@@ -19,17 +19,35 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Martina Valenti — Exclusive Private Access',
+  title: 'Martina Valenti',
   description:
-    'Discover my uncensored side. Exclusive access to my private world. 100% free, only on Telegram.',
+    'Hey, I\'m Martina. Here\'s where you can find me.',
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: 'Martina Valenti — Exclusive Private Access',
-    description: 'Discover the uncensored side.',
+    title: 'Martina Valenti',
+    description: 'Hey, I\'m Martina. Here\'s where you can find me.',
     type: 'website',
+    url: 'https://martinavalenti.com',
+    images: [
+      {
+        url: 'https://martinavalenti.com/avatar.webp',
+        width: 600,
+        height: 600,
+        alt: 'Martina Valenti',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Martina Valenti',
+    description: 'Hey, I\'m Martina. Here\'s where you can find me.',
+    images: ['https://martinavalenti.com/avatar.webp'],
+  },
+  icons: {
+    icon: '/favicon.ico',
   },
 };
 
