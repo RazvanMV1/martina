@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 const LINKS = {
   telegram: 'https://t.me/+2mCTM0udo780NGU0',
-  twitter: 'https://x.com/martyyy_only',
+  twitter: 'https://x.com/martyyValenti',
   instagram: 'https://www.instagram.com/martyyy.only/',
   fanvue: 'https://www.fanvue.com/martina.valenti',
 };
