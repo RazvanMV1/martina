@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 
-const FANVUE_URL = 'https://www.fanvue.com/martina.valenti';
+const FANVUE_URL = 'https://www.fanvue.com/martina.valenti/fv-3';
 
 export default function HomePage() {
 
